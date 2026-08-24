@@ -174,10 +174,23 @@ function Requests({notify}) {
   const [rows,setRows]=useState([]),[learning,setLearning]=useState([]),[skills,setSkills]=useState([]),[form,setForm]=useState({skill_id:"",description:""});
   async function load(){setRows(await api("/requests/swap"));setLearning(await api("/requests/learning/mine"));setSkills(await api("/skills"))}
   useEffect(()=>{load().catch(e=>notify(e.message))},[]);
-  async function learning(e){e.preventDefault();try{await api("/requests/learning",{method:"POST",body:JSON.stringify(form)});notify("Learning request created.");load()}catch(e){notify(e.message)}}
+  async function handleLearningSubmit(e) {
+  e.preventDefault();
+  try {
+    await api("/requests/learning", {
+      method: "POST",
+      body: JSON.stringify(form)
+    });
+    notify("Learning request created.");
+    load();
+  } catch (e) {
+    notify(e.message);
+  }
+}
+
   async function action(id,status){try{await api(`/requests/swap/${id}`,{method:"PATCH",body:JSON.stringify({status})});notify(`Request ${status.toLowerCase()}.`);load()}catch(e){notify(e.message)}}
   return <section><div className="page-title"><div><span className="eyebrow">REQUESTS</span><h1>Skill exchange requests</h1></div></div>
-    <div className="split"><form className="form-card" onSubmit={learning}><h3>I want to learn</h3><label>Skill<select required value={form.skill_id} onChange={e=>setForm({...form,skill_id:e.target.value})}><option value="">Choose...</option>{skills.map(s=><option key={s.skill_id} value={s.skill_id}>{s.skill_name}</option>)}</select></label><label>Why do you want to learn it?<textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><button className="big">Create Learning Request</button></form>
+    <div className="split"><form className="form-card" onSubmit={handleLearningSubmit}><h3>I want to learn</h3><label>Skill<select required value={form.skill_id} onChange={e=>setForm({...form,skill_id:e.target.value})}><option value="">Choose...</option>{skills.map(s=><option key={s.skill_id} value={s.skill_id}>{s.skill_name}</option>)}</select></label><label>Why do you want to learn it?<textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><button className="big">Create Learning Request</button></form>
     <div><h3>Swap requests</h3>{rows.map(r=><article className="card request" key={r.swap_request_id}><div><h3>{r.requester_name} ↔ {r.receiver_name}</h3><p>{r.offered_skill} ↔ {r.requested_skill}</p><span className={`status ${r.status.toLowerCase()}`}>{r.status}</span></div>{r.status==="PENDING" && <div><button onClick={()=>action(r.swap_request_id,"ACCEPTED")}>Accept</button><button className="danger" onClick={()=>action(r.swap_request_id,"REJECTED")}>Reject</button></div>}</article>)}</div></div>
     <h3 className="subhead">My learning requests</h3>{learning.map(x=><div className="list-row" key={x.learning_req_id}><b>{x.skill_name}</b><span>{x.status}</span></div>)}
   </section>
